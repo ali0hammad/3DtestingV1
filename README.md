@@ -1,1 +1,0 @@
-This is a sample of what I desire to create as a project. It contains one 3D file of a flower pot and the HTML file that contains it. That HTML file will provide a user interface and will allow the user actually to 3D view the file. When the user 3D views the file, it all happens by scanning a QR code which is basically connected to this main repository. 

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<!--
+========================================================================
+FINAL PRODUCTION VERSION — VIEWER LOCKED
+========================================================================
+
+END USER:
+- Can view dishes
+- Can open AR
+- Can go back to menu
+
+DEVELOPER:
+- Edit ONLY the clearly marked sections
+========================================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <title>The Grill House | Premium AR Menu</title>
+
+    <!-- Model Viewer -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+    <!--
+    AR REQUIREMENTS:
+    - HTTPS or localhost required
+    - Android: Chrome
+    - iOS: Safari + USDZ via ios-src
+    -->
+
+    <style>
+        :root {
+            --gold:#D4AF37;
+            --glass:rgba(255,255,255,0.05);
+            --border:rgba(255,255,255,0.1);
+            --text:#f0f0f0;
+            --muted:#888;
+        }
+
+        body {
+            margin:0;
+            font-family:'Outfit',sans-serif;
+            background:radial-gradient(circle at top right,#1a1a1a,#000 90%);
+            color:var(--text);
+            min-height:100vh;
+        }
+
+        .container {
+            max-width:1000px;
+            margin:0 auto;
+            padding:24px;
+        }
+
+        header {
+            text-align:center;
+            margin-bottom:30px;
+        }
+
+        h1 {
+            color:var(--gold);
+            font-weight:200;
+            font-size:32px;
+            letter-spacing:3px;
+            margin:0;
+        }
+
+        .subtitle {
+            color:var(--muted);
+            font-size:14px;
+            letter-spacing:1px;
+            margin-top:5px;
+        }
+
+        .menu-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+            gap:20px;
+        }
+
+        .item-card {
+            background:var(--glass);
+            border:1px solid var(--border);
+            border-radius:12px;
+            padding:20px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            cursor:pointer;
+            transition:.3s;
+        }
+
+        .item-card:hover {
+            transform:translateY(-3px);
+            border-color:var(--gold);
+        }
+
+        .price-tag {
+            color:var(--gold);
+            font-weight:700;
+            font-size:18px;
+            background:rgba(212,175,55,.08);
+            padding:8px 12px;
+            border-radius:8px;
+        }
+
+        /* AR VIEW */
+        #ar-overlay {
+            position:fixed;
+            inset:0;
+            background:#000;
+            z-index:1000;
+            display:none;
+        }
+
+        #ar-overlay.visible {
+            display:block;
+        }
+
+        model-viewer {
+            width:100%;
+            height:100%;
+            background:#000;
+        }
+
+        /* BACK BUTTON */
+        .btn-back {
+            position:absolute;
+            top:20px;
+            left:20px;
+            z-index:200;
+            background:rgba(0,0,0,.6);
+            color:#fff;
+            border:1px solid #333;
+            padding:10px 20px;
+            border-radius:20px;
+            cursor:pointer;
+            font-family:inherit;
+        }
+
+        .ar-prompt {
+            position:absolute;
+            bottom:40px;
+            left:50%;
+            transform:translateX(-50%);
+            background:var(--gold);
+            color:#000;
+            padding:12px 24px;
+            border-radius:30px;
+            font-weight:700;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container" id="menu-view">
+    <header>
+        <h1>The Grill House</h1>
+        <div class="subtitle">FINE DINING & AR EXPERIENCE</div>
+    </header>
+
+    <div class="menu-grid" id="menu-target"></div>
+</div>
+
+<!-- AR OVERLAY -->
+<div id="ar-overlay">
+    <!-- BACK / EXIT BUTTON -->
+    <button class="btn-back" onclick="closeAR()">← Back to Menu</button>
+
+    <!--
+    DEVELOPER NOTE:
+    - src = GLB (Android / WebXR)
+    - ios-src = USDZ (required for iOS Quick Look)
+    -->
+    <model-viewer id="viewer"
+        src=""
+        ios-src=""
+        camera-controls
+        auto-rotate
+        ar
+        ar-modes="scene-viewer webxr quick-look"
+        ar-scale="fixed"
+        xr-environment>
+        <button slot="ar-button" class="ar-prompt">View on Table 🍽️</button>
+    </model-viewer>
+</div>
+
+<script>
+/**********************************************************************
+DEVELOPER-ONLY: MENU DATA (SINGLE SOURCE OF TRUTH)
+Edit ONLY this array to update dishes
+**********************************************************************/
+const menuItems = [
+    {
+        id:"burger",
+        name:"Classic Wagyu Burger",
+        desc:"Aged cheddar, caramelized onion, brioche bun.",
+        price:"$18.00",
+        model:"https://modelviewer.dev/shared-assets/models/Hamburger.glb",
+        ios:""
+    },
+    {
+        id:"avocado",
+        name:"Avocado Starter",
+        desc:"Fresh hass avocado, sea salt, olive oil.",
+        price:"$12.50",
+        model:"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Avocado/glTF-Binary/Avocado.glb",
+        ios:""
+    }
+];
+
+/**********************************************************************
+DO NOT EDIT BELOW — VIEWER LOGIC ONLY
+**********************************************************************/
+const menuTarget=document.getElementById("menu-target");
+const overlay=document.getElementById("ar-overlay");
+const viewer=document.getElementById("viewer");
+
+function renderMenu(){
+    menuTarget.innerHTML="";
+    menuItems.forEach(item=>{
+        const card=document.createElement("div");
+        card.className="item-card";
+        card.innerHTML=`
+            <div>
+                <h3>${item.name}</h3>
+                <p style="color:var(--muted)">${item.desc}</p>
+            </div>
+            <div class="price-tag">${item.price}</div>
+        `;
+        card.onclick=()=>openAR(item);
+        menuTarget.appendChild(card);
+    });
+}
+
+async function ensureCameraPermission() {
+    try {
+        if (navigator.permissions && navigator.permissions.query) {
+            const p = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
+            if (p && p.state === 'granted') return true;
+        }
+    } catch (e) {}
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } }
+        });
+        stream.getTracks().forEach(t => t.stop());
+        return true;
+    } catch (err) {
+        console.warn("Camera permission not granted:", err);
+        return false;
+    }
+}
+
+async function openAR(item){
+    await ensureCameraPermission();
+
+    viewer.src=item.model;
+    if(item.ios) viewer.setAttribute("ios-src",item.ios);
+    else viewer.removeAttribute("ios-src");
+
+    overlay.classList.add("visible");
+}
+
+function closeAR(){
+    overlay.classList.remove("visible");
+    setTimeout(()=>viewer.src="",300);
+}
+
+renderMenu();
+</script>
+
+</body>
+</html>
